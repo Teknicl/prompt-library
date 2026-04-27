@@ -1,0 +1,6 @@
+node_modules/
+dist/
+data/
+.codex
+*.log
+.DS_Store

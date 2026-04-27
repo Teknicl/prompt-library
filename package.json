@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "scripts": {
+    "api": "node server.js",
+    "build": "vite build",
+    "dev": "node dev.js",
+    "web": "vite --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest"
+  },
+  "devDependencies": {}
+}
