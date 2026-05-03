@@ -461,6 +461,21 @@ kbd {
   background: var(--hover);
 }
 
+.prompt-row-main {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .row-icon {
   display: grid;
   place-items: center;
@@ -519,6 +534,25 @@ kbd {
 
 .star {
   color: var(--faint);
+}
+
+.row-star-button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.row-star-button:hover {
+  background: var(--panel);
+}
+
+.row-star-button.is-active {
+  color: var(--amber);
 }
 
 .detail-pane {
@@ -906,6 +940,30 @@ textarea:focus,
   border-color: var(--line-strong);
 }
 
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 36px));
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.toast.success {
+  border-color: color-mix(in srgb, var(--green) 28%, var(--line));
+}
+
+.toast.error {
+  border-color: color-mix(in srgb, var(--rose) 28%, var(--line));
+}
+
 .auth-shell {
   display: grid;
   place-items: center;
@@ -1080,6 +1138,10 @@ textarea:focus,
   .tag-stack,
   .row-meta {
     display: none;
+  }
+
+  .prompt-row-main {
+    grid-template-columns: subgrid;
   }
 
   .field-row,

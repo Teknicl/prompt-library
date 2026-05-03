@@ -56,6 +56,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -295,15 +296,30 @@ function App() {
 
   async function copyPrompt() {
     if (!selected) return;
-    await navigator.clipboard.writeText(selected.body);
-    setCopied(true);
-    await updatePrompt(selected.id, { uses: selected.uses + 1 });
-    window.setTimeout(() => setCopied(false), 1300);
+    try {
+      await navigator.clipboard.writeText(editorPrompt?.body ?? selected.body);
+      setCopied(true);
+      setToast({ tone: "success", message: "Prompt copied to clipboard." });
+      await updatePrompt(selected.id, { uses: selected.uses + 1 });
+      window.setTimeout(() => setCopied(false), 1300);
+    } catch {
+      setToast({ tone: "error", message: "Copy failed. Your browser blocked clipboard access." });
+    }
   }
 
   function updateEditorPrompt(patch) {
     setEditorPrompt((current) => (current ? { ...current, ...patch } : current));
   }
+
+  function showToast(message, tone = "success") {
+    setToast({ tone, message });
+  }
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeoutId = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
 
   if (loading) {
     return (
@@ -520,11 +536,8 @@ function App() {
 
               <div className="prompt-table">
                 {filtered.map((prompt) => (
-                  <button
-                    className={`prompt-row ${selected?.id === prompt.id ? "selected" : ""}`}
-                    key={prompt.id}
-                    onClick={() => setSelectedId(prompt.id)}
-                  >
+                  <div className={`prompt-row ${selected?.id === prompt.id ? "selected" : ""}`} key={prompt.id}>
+                    <button className="prompt-row-main" onClick={() => setSelectedId(prompt.id)}>
                     <span className="row-icon">{promptIcon(prompt.collection)}</span>
                     <span className="row-main">
                       <strong>{prompt.title}</strong>
@@ -538,8 +551,18 @@ function App() {
                       ))}
                     </span>
                     <span className="row-meta">{prompt.updated}</span>
-                    <Star className={prompt.favorite ? "star filled" : "star"} size={16} />
-                  </button>
+                    </button>
+                    <button
+                      className={`row-star-button ${prompt.favorite ? "is-active" : ""}`}
+                      onClick={() => {
+                        updatePrompt(prompt.id, { favorite: !prompt.favorite });
+                        showToast(prompt.favorite ? "Removed from favorites." : "Added to favorites.");
+                      }}
+                      aria-label={prompt.favorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Star className={prompt.favorite ? "star filled" : "star"} size={16} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -750,6 +773,8 @@ function App() {
             </div>
           </section>
         )}
+
+        {toast && <div className={`toast ${toast.tone}`}>{toast.message}</div>}
       </main>
     </div>
   );
