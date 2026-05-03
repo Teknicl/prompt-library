@@ -59,6 +59,7 @@ function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [editorPrompt, setEditorPrompt] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({ name: "", email: "", password: "", passwordConfirm: "" });
   const [error, setError] = useState("");
@@ -110,6 +111,43 @@ function App() {
     if (!selected && prompts[0]) setSelectedId(prompts[0].id);
     if (selected && selected.id !== selectedId) setSelectedId(selected.id);
   }, [prompts, selected, selectedId]);
+
+  useEffect(() => {
+    if (!selected) {
+      setEditorPrompt(null);
+      return;
+    }
+
+    setEditorPrompt({
+      id: selected.id,
+      title: selected.title,
+      body: selected.body,
+      tagsText: selected.tags.join(", "),
+    });
+  }, [selected?.id]);
+
+  useEffect(() => {
+    if (!selected || !editorPrompt || editorPrompt.id !== selected.id) return;
+
+    const patch = {};
+    if (editorPrompt.title !== selected.title) patch.title = editorPrompt.title;
+    if (editorPrompt.body !== selected.body) patch.body = editorPrompt.body;
+
+    const nextTags = editorPrompt.tagsText
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    const currentTagsText = selected.tags.join(", ");
+    if (editorPrompt.tagsText !== currentTagsText) patch.tags = nextTags;
+
+    if (!Object.keys(patch).length) return;
+
+    const timeoutId = window.setTimeout(() => {
+      updatePrompt(selected.id, patch);
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [editorPrompt, selected]);
 
   async function api(path, options = {}) {
     let response;
@@ -261,6 +299,10 @@ function App() {
     setCopied(true);
     await updatePrompt(selected.id, { uses: selected.uses + 1 });
     window.setTimeout(() => setCopied(false), 1300);
+  }
+
+  function updateEditorPrompt(patch) {
+    setEditorPrompt((current) => (current ? { ...current, ...patch } : current));
   }
 
   if (loading) {
@@ -538,8 +580,8 @@ function App() {
 
               <input
                 className="title-input"
-                value={selected.title}
-                onChange={(event) => updatePrompt(selected.id, { title: event.target.value })}
+                value={editorPrompt?.title ?? ""}
+                onChange={(event) => updateEditorPrompt({ title: event.target.value })}
               />
 
               <div className="field-row">
@@ -579,19 +621,12 @@ function App() {
                   Tags
                 </label>
                 <input
-                  value={selected.tags.join(", ")}
-                  onChange={(event) =>
-                    updatePrompt(selected.id, {
-                      tags: event.target.value
-                        .split(",")
-                        .map((tag) => tag.trim())
-                        .filter(Boolean),
-                    })
-                  }
+                  value={editorPrompt?.tagsText ?? ""}
+                  onChange={(event) => updateEditorPrompt({ tagsText: event.target.value })}
                 />
               </div>
 
-              <textarea value={selected.body} onChange={(event) => updatePrompt(selected.id, { body: event.target.value })} />
+              <textarea value={editorPrompt?.body ?? ""} onChange={(event) => updateEditorPrompt({ body: event.target.value })} />
 
               <div className="meta-grid">
                 <Metric icon={Clock3} label="Updated" value={selected.updated} />
