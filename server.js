@@ -1,12 +1,15 @@
 import { pbkdf2Sync, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, "data");
+const distDir = join(__dirname, "dist");
+const dataDir = process.env.DATA_DIR ? join(process.env.DATA_DIR) : join(__dirname, "data");
+const port = Number(process.env.PORT ?? 3000);
 mkdirSync(dataDir, { recursive: true });
 
 const db = new DatabaseSync(join(dataDir, "prompt-library.sqlite"));
@@ -231,14 +234,45 @@ async function parseBody(request) {
   return raw ? JSON.parse(raw) : {};
 }
 
-function send(response, status, payload) {
+function send(response, status, payload, headers = {}) {
   response.writeHead(status, {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Content-Type": "application/json",
+    ...headers,
   });
   response.end(JSON.stringify(payload));
+}
+
+const contentTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
+
+function getContentType(pathname) {
+  const extension = pathname.slice(pathname.lastIndexOf("."));
+  return contentTypes[extension] ?? "application/octet-stream";
+}
+
+async function serveStatic(request, response, pathname) {
+  const normalized = pathname === "/" ? "/index.html" : pathname;
+  const requestedPath = join(distDir, normalized);
+  const fallbackPath = join(distDir, "index.html");
+  const filePath = existsSync(requestedPath) ? requestedPath : fallbackPath;
+
+  try {
+    const body = await readFile(filePath);
+    response.writeHead(200, { "Content-Type": getContentType(filePath) });
+    response.end(body);
+  } catch {
+    send(response, 404, { error: "Frontend build not found. Run npm run build first." });
+  }
 }
 
 function requireUser(request, response) {
@@ -251,7 +285,8 @@ createServer(async (request, response) => {
   if (request.method === "OPTIONS") return send(response, 204, {});
 
   try {
-    const url = new URL(request.url, "http://localhost:8787");
+    const url = new URL(request.url, `http://localhost:${port}`);
+    const isApiRoute = url.pathname.startsWith("/api/");
 
     if (request.method === "POST" && url.pathname === "/api/auth/register") {
       const { name = "", email = "", password = "" } = await parseBody(request);
@@ -294,8 +329,15 @@ createServer(async (request, response) => {
       return send(response, 200, { user, ...listData(user.id) });
     }
 
-    const user = requireUser(request, response);
-    if (!user) return;
+    if (request.method === "GET" && url.pathname === "/api/health") {
+      return send(response, 200, { ok: true });
+    }
+
+    let user = null;
+    if (isApiRoute) {
+      user = requireUser(request, response);
+      if (!user) return;
+    }
 
     if (request.method === "POST" && url.pathname === "/api/collections") {
       const { name = "" } = await parseBody(request);
@@ -375,6 +417,10 @@ createServer(async (request, response) => {
       return send(response, 200, listData(user.id));
     }
 
+    if (!isApiRoute && request.method === "GET") {
+      return serveStatic(request, response, url.pathname);
+    }
+
     return send(response, 404, { error: "Not found" });
   } catch (error) {
     if (String(error.message).includes("UNIQUE")) {
@@ -383,6 +429,6 @@ createServer(async (request, response) => {
     console.error(error);
     return send(response, 500, { error: "Something went wrong." });
   }
-}).listen(8787, "0.0.0.0", () => {
-  console.log("Prompt Library API running at http://localhost:8787");
+}).listen(port, "0.0.0.0", () => {
+  console.log(`Prompt Library running at http://localhost:${port}`);
 });

@@ -6,18 +6,23 @@ const processes = [
     name: "api",
     command: process.execPath,
     args: ["server.js"],
+    env: {
+      ...process.env,
+      PORT: "8787",
+    },
   },
   {
     name: "web",
     command: process.execPath,
     args: [join("node_modules", "vite", "bin", "vite.js"), "--host", "0.0.0.0", "--port", "5173"],
+    env: process.env,
   },
 ];
 
-const children = processes.map(({ name, command, args }) => {
+const children = processes.map(({ name, command, args, env }) => {
   const child = spawn(command, args, {
     stdio: ["ignore", "pipe", "pipe"],
-    env: process.env,
+    env,
   });
 
   child.stdout.on("data", (chunk) => process.stdout.write(`[${name}] ${chunk}`));

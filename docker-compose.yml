@@ -1,0 +1,15 @@
+services:
+  prompt-library:
+    image: ghcr.io/teknicl/prompt-library:latest
+    container_name: prompt-library
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATA_DIR: /app/data
+    volumes:
+      - prompt_library_data:/app/data
+
+volumes:
+  prompt_library_data:

@@ -1,17 +1,19 @@
 {
   "type": "module",
   "scripts": {
-    "api": "node server.js",
+    "api": "PORT=8787 node server.js",
     "build": "vite build",
     "dev": "node dev.js",
+    "start": "node server.js",
     "web": "vite --host 0.0.0.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
     "lucide-react": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest"
+  }
 }
