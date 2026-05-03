@@ -1,6 +1,6 @@
 services:
   prompt-library:
-    image: ghcr.io/teknicl/prompt-library:latest
+    image: ghcr.io/teknicl/prompt-library-app:latest
     container_name: prompt-library
     restart: unless-stopped
     ports:

@@ -125,7 +125,7 @@ The included compose file mounts a named volume for `/app/data`, which preserves
 The workflow at `.github/workflows/publish-image.yml` publishes the container image to:
 
 ```txt
-ghcr.io/<your-github-owner>/<your-repo>:latest
+ghcr.io/teknicl/prompt-library-app:latest
 ```
 
 It runs automatically on pushes to `main`, on version tags like `v1.0.0`, and on manual workflow dispatch.
